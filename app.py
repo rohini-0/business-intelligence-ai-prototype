@@ -12,7 +12,7 @@ WHAT THIS APP DOES:
 3. Shows the ranked, confidence-scored drivers behind that movement
    (deterministic -- no LLM involved in this part)
 4. Generates a persona-specific narrative explaining it in plain English
-   (this is the one part that calls the Claude API -- if no API key is
+   (this is the one part that calls the Gemini API -- if no API key is
    provided, the app falls back to a pre-written example so the demo still
    works without one)
 """
@@ -160,21 +160,26 @@ PERSONA_INSTRUCTIONS = {
 }
 
 
-def call_claude(api_key: str, user_prompt: str) -> str:
+def call_gemini(api_key: str, system_prompt: str, user_prompt: str) -> str:
+    """Calls Google's Gemini API. Uses the REST endpoint directly (no SDK
+    dependency needed) so requirements.txt stays minimal.
+    NOTE: if 'gemini-2.0-flash' ever returns a 404 model-not-found error,
+    swap the model name below for whatever current Gemini model name you
+    see in Google AI Studio (https://aistudio.google.com) -- model names
+    change over time and this was written from a fixed knowledge cutoff."""
+    model = "gemini-2.0-flash"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
     body = json.dumps({
-        "model": "claude-sonnet-4-6", "max_tokens": 400,
-        "system": SYSTEM_PROMPT,
-        "messages": [{"role": "user", "content": user_prompt}],
+        "systemInstruction": {"parts": [{"text": system_prompt}]},
+        "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
+        "generationConfig": {"maxOutputTokens": 400},
     }).encode("utf-8")
     req = urllib.request.Request(
-        "https://api.anthropic.com/v1/messages", data=body,
-        headers={"Content-Type": "application/json", "x-api-key": api_key,
-                 "anthropic-version": "2023-06-01"},
-        method="POST",
+        url, data=body, headers={"Content-Type": "application/json"}, method="POST",
     )
     with urllib.request.urlopen(req) as resp:
         data = json.loads(resp.read())
-    return "".join(b["text"] for b in data["content"] if b["type"] == "text")
+    return data["candidates"][0]["content"]["parts"][0]["text"]
 
 
 def generate_narrative(persona: str, movement: dict, drivers: list, api_key: str) -> str:
@@ -189,9 +194,12 @@ def generate_narrative(persona: str, movement: dict, drivers: list, api_key: str
     }
     prompt = f"{PERSONA_INSTRUCTIONS[persona]}\n\nData:\n{json.dumps(payload, indent=2)}"
     try:
-        return call_claude(api_key, prompt)
+        return call_gemini(api_key, SYSTEM_PROMPT, prompt)
     except Exception as e:
-        return f"(API call failed: {e})\n\n" + FALLBACK_NARRATIVES.get(persona, "")
+        return (f"(API call failed: {e})\n\n"
+                f"If this says 'model not found', open app.py and update the "
+                f"model name in call_gemini() to a current Gemini model from "
+                f"https://aistudio.google.com\n\n") + FALLBACK_NARRATIVES.get(persona, "")
 
 
 # ---------------------------------------------------------------------------
@@ -203,8 +211,9 @@ st.caption("Reconciles Superstore, Telco, and Support Ticket data honestly at th
 
 with st.sidebar:
     st.header("Settings")
-    api_key = st.text_input("Anthropic API key (optional)", type="password",
-                             help="Leave blank to see offline example narratives.")
+    api_key = st.text_input("Gemini API key (optional)", type="password",
+                             help="Leave blank to see offline example narratives. "
+                                  "Get a free key at https://aistudio.google.com")
     persona = st.selectbox("View as persona:", list(PERSONA_INSTRUCTIONS.keys()))
 
     st.divider()
@@ -292,7 +301,7 @@ else:
 
     with st.expander("⏱️ Runtime telemetry for this narrative"):
         approx_tokens = len(narrative.split()) * 1.3  # rough word->token estimate
-        mode = "Live LLM call (Claude Sonnet)" if api_key else "Offline fallback (no API call made)"
+        mode = "Live LLM call (Gemini 2.0 Flash)" if api_key else "Offline fallback (no API call made)"
         st.write(f"**Mode:** {mode}")
         st.write(f"**Latency:** {_elapsed_ms:.0f} ms")
         st.write(f"**Approx. output tokens:** {approx_tokens:.0f}")
