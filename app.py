@@ -163,11 +163,11 @@ PERSONA_INSTRUCTIONS = {
 def call_gemini(api_key: str, system_prompt: str, user_prompt: str) -> str:
     """Calls Google's Gemini API. Uses the REST endpoint directly (no SDK
     dependency needed) so requirements.txt stays minimal.
-    NOTE: if 'gemini-2.0-flash' ever returns a 404 model-not-found error,
-    swap the model name below for whatever current Gemini model name you
-    see in Google AI Studio (https://aistudio.google.com) -- model names
-    change over time and this was written from a fixed knowledge cutoff."""
-    model = "gemini-2.0-flash"
+    Model note: gemini-2.0-flash was shut down by Google on 2026-06-01 --
+    using gemini-2.5-flash instead, confirmed current as of this writing.
+    If this ever 404s again, get a current model name from
+    https://aistudio.google.com and update the line below."""
+    model = "gemini-2.5-flash"
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
     body = json.dumps({
         "systemInstruction": {"parts": [{"text": system_prompt}]},
@@ -301,7 +301,7 @@ else:
 
     with st.expander("⏱️ Runtime telemetry for this narrative"):
         approx_tokens = len(narrative.split()) * 1.3  # rough word->token estimate
-        mode = "Live LLM call (Gemini 2.0 Flash)" if api_key else "Offline fallback (no API call made)"
+        mode = "Live LLM call (Gemini 2.5 Flash)" if api_key else "Offline fallback (no API call made)"
         st.write(f"**Mode:** {mode}")
         st.write(f"**Latency:** {_elapsed_ms:.0f} ms")
         st.write(f"**Approx. output tokens:** {approx_tokens:.0f}")
@@ -313,3 +313,4 @@ st.divider()
 with st.expander("📄 View full semantic contract"):
     with open("semantic_contract.md") as f:
         st.markdown(f.read())
+
