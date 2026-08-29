@@ -34,16 +34,21 @@ See `semantic_contract.md` for full KPI definitions and data-source disclosures.
    ANYONE can open and click through -- including judges. No installation
    needed on their end.
 
-### Part 3 (optional but recommended) -- Add your API key for live narratives
+### Part 3 (optional but recommended) -- Add your Gemini API key for live narratives
 
 Without an API key, the app still works and shows realistic example
 narratives (clearly labeled "offline fallback"). To make it generate live,
 real-time narratives instead:
 
-1. Get an API key from https://console.anthropic.com (Anthropic's website).
-2. On the live app, open the sidebar and paste your key into the "Anthropic
+1. Get a free API key from https://aistudio.google.com (Google AI Studio).
+2. On the live app, open the sidebar and paste your key into the "Gemini
    API key" box. It's only used in your browser session -- it is not saved
    anywhere.
+
+**If you get a "model not found" error:** Gemini's model names change over
+time. Open `app.py`, find the `call_gemini()` function near the top, and
+update the `model = "gemini-2.0-flash"` line to whatever current model name
+Google AI Studio shows you, then re-upload that one file to GitHub.
 
 ---
 
@@ -65,3 +70,4 @@ real-time narratives instead:
 | `data/final_kpi_dataset.csv` | The real, reconciled dataset (region x week) |
 | `semantic_contract.md` | KPI definitions, formulas, and honest data-source disclosures |
 | `requirements.txt` | The two Python packages needed (streamlit, pandas) |
+
