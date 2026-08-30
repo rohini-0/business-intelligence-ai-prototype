@@ -205,9 +205,86 @@ def generate_narrative(persona: str, movement: dict, drivers: list, api_key: str
 # ---------------------------------------------------------------------------
 # UI
 # ---------------------------------------------------------------------------
-st.title("📊 BusinessIntelligence.ai -- KPI Intelligence-to-Action Prototype")
-st.caption("Reconciles Superstore, Telco, and Support Ticket data honestly at the "
-           "regional level -- no fabricated customer-identity joins. See semantic_contract.md.")
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+html, body, [class*="css"]  { font-family: 'IBM Plex Sans', sans-serif; }
+h1, h2, h3 { font-family: 'Space Grotesk', sans-serif !important; letter-spacing: -0.01em; }
+
+.bi-eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #2FBF8F;
+    margin-bottom: 4px;
+}
+.bi-subtitle { color: #8B93A3; font-size: 0.95rem; margin-top: -6px; }
+
+.bi-readout-row { display: flex; gap: 14px; margin: 18px 0 10px 0; flex-wrap: wrap; }
+.bi-readout {
+    flex: 1; min-width: 200px;
+    background: #1A2029; border: 1px solid #2B3540; border-radius: 10px;
+    padding: 16px 18px;
+}
+.bi-readout-label {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem;
+    letter-spacing: 0.08em; text-transform: uppercase; color: #8B93A3;
+}
+.bi-readout-value {
+    font-family: 'IBM Plex Mono', monospace; font-size: 1.9rem; font-weight: 600;
+    color: #EDEFF3; margin-top: 2px;
+}
+.bi-readout-sub { font-size: 0.82rem; margin-top: 4px; }
+
+.bi-tier-High { color: #2FBF8F; }
+.bi-tier-Medium { color: #E8A33D; }
+.bi-tier-Low { color: #8B93A3; }
+
+.bi-driver-card {
+    background: #1A2029; border-radius: 10px; margin-bottom: 10px;
+    border-left: 4px solid #2B3540; overflow: hidden;
+}
+.bi-driver-card.High { border-left-color: #2FBF8F; }
+.bi-driver-card.Medium { border-left-color: #E8A33D; }
+.bi-driver-card.Low { border-left-color: #6B7480; }
+.bi-driver-card summary {
+    padding: 12px 16px; cursor: pointer; font-weight: 500;
+    display: flex; align-items: center; gap: 10px; list-style: none;
+}
+.bi-driver-card summary::-webkit-details-marker { display: none; }
+.bi-driver-body { padding: 0 16px 14px 16px; color: #C7CCD4; font-size: 0.92rem; }
+.bi-driver-meta {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem;
+    color: #8B93A3; margin-top: 8px;
+}
+.bi-signal-dot {
+    display: inline-block; width: 9px; height: 9px; border-radius: 50%;
+}
+.bi-signal-dot.High { background: #2FBF8F; }
+.bi-signal-dot.Medium { background: #E8A33D; }
+.bi-signal-dot.Low { background: #6B7480; }
+
+.bi-narrative-card {
+    background: #1A2029; border: 1px solid #2B3540; border-radius: 10px;
+    padding: 18px 20px; line-height: 1.6;
+}
+.bi-narrative-persona {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem;
+    letter-spacing: 0.1em; text-transform: uppercase; color: #2FBF8F;
+    margin-bottom: 10px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown('<div class="bi-eyebrow">KPI Intelligence-to-Action &middot; Prototype</div>', unsafe_allow_html=True)
+st.title("BusinessIntelligence.ai")
+st.markdown(
+    '<div class="bi-subtitle">Reconciles Superstore, Telco, and Support Ticket data honestly '
+    'at the regional level -- no fabricated customer-identity joins. See semantic_contract.md.</div>',
+    unsafe_allow_html=True,
+)
 
 with st.sidebar:
     st.header("Settings")
@@ -264,40 +341,67 @@ else:
                    f"against, so treat any 'vs. average' comparison below with extra caution.")
 
     col1, col2, col3 = st.columns(3)
-    col1.metric("Profit Margin (this week)", f"{movement['value']:.1%}",
-                f"{movement['deviation']:.1%} vs. region avg")
-    col2.metric("Region average", f"{movement['region_average']:.1%}")
-    col3.metric("Movement confidence", movement["confidence_tier"],
-                help=f"Based on order_count={movement['order_count']} that week")
+    tier = movement["confidence_tier"]
+    dev_color = "#2FBF8F" if movement["deviation"] >= 0 else "#E6533F"
+    st.markdown(f"""
+    <div class="bi-readout-row">
+      <div class="bi-readout">
+        <div class="bi-readout-label">Profit Margin (this week)</div>
+        <div class="bi-readout-value">{movement['value']:.1%}</div>
+        <div class="bi-readout-sub" style="color:{dev_color}">{movement['deviation']:+.1%} vs. region avg</div>
+      </div>
+      <div class="bi-readout">
+        <div class="bi-readout-label">Region average</div>
+        <div class="bi-readout-value">{movement['region_average']:.1%}</div>
+      </div>
+      <div class="bi-readout">
+        <div class="bi-readout-label">Movement confidence</div>
+        <div class="bi-readout-value bi-tier-{tier}">{tier}</div>
+        <div class="bi-readout-sub" style="color:#8B93A3">order_count = {movement['order_count']}</div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     if movement["confidence_tier"] != "High":
-        st.info(f"⚠️ This movement is **{movement['confidence_tier']} confidence** "
+        st.info(f"This movement is **{movement['confidence_tier']} confidence** "
                 f"(only {movement['order_count']} orders that week). The engine is "
                 f"deliberately not overstating certainty here.")
 
-    st.subheader("Ranked Drivers (deterministic -- no LLM)")
+    st.subheader("Ranked Drivers")
     st.caption("Method: rule-based deterministic ranking (pandas/Python), not model-generated. "
                "See driver_ranking.py.")
     drivers = rank_drivers(movement)
+    source_map = {
+        "Average Discount Rate": ("Superstore (Sample - Superstore.csv)", "Daily"),
+        "Support Ticket Volume": ("Support Tickets (synthetic region proxy)", "Weekly (week-of-year)"),
+        "Regional Customer-Health Snapshot (churn rate)": ("Telco Churn (synthetic region proxy)", "Static snapshot -- no refresh cadence"),
+    }
     for i, d in enumerate(drivers, 1):
-        badge = {"High": "🟢", "Medium": "🟡", "Low": "⚪"}[d["confidence"]]
-        with st.expander(f"{i}. {badge} {d['driver']} -- {d['confidence']} confidence"):
-            st.write(d["explanation"])
-            st.caption(f"**Relationship:** {d['relationship']}")
-            source_map = {
-                "Average Discount Rate": ("Superstore (Sample - Superstore.csv)", "Daily"),
-                "Support Ticket Volume": ("Support Tickets (synthetic region proxy)", "Weekly (week-of-year)"),
-                "Regional Customer-Health Snapshot (churn rate)": ("Telco Churn (synthetic region proxy)", "Static snapshot -- no refresh cadence"),
-            }
-            src, freshness = source_map.get(d["driver"], ("Unknown", "Unknown"))
-            st.caption(f"**Source:** {src} | **Freshness/cadence:** {freshness}")
+        src, freshness = source_map.get(d["driver"], ("Unknown", "Unknown"))
+        st.markdown(f"""
+        <details class="bi-driver-card {d['confidence']}">
+          <summary><span class="bi-signal-dot {d['confidence']}"></span> {i}. {d['driver']} &mdash; {d['confidence']} confidence</summary>
+          <div class="bi-driver-body">
+            {d['explanation']}
+            <div class="bi-driver-meta">
+              RELATIONSHIP: {d['relationship']}<br/>
+              SOURCE: {src} &nbsp;|&nbsp; FRESHNESS: {freshness}
+            </div>
+          </div>
+        </details>
+        """, unsafe_allow_html=True)
 
-    st.subheader(f"Narrative for: {persona}")
+    st.subheader("Narrative")
     _t0 = time.perf_counter()
     with st.spinner("Generating narrative..."):
         narrative = generate_narrative(persona, movement, drivers, api_key)
     _elapsed_ms = (time.perf_counter() - _t0) * 1000
-    st.markdown(narrative)
+    st.markdown(f"""
+    <div class="bi-narrative-card">
+      <div class="bi-narrative-persona">View as &middot; {persona}</div>
+      {narrative}
+    </div>
+    """, unsafe_allow_html=True)
 
     with st.expander("⏱️ Runtime telemetry for this narrative"):
         approx_tokens = len(narrative.split()) * 1.3  # rough word->token estimate
@@ -310,6 +414,10 @@ else:
                    "millisecond latency. Only this final narrative step touches the API.")
 
 st.divider()
+with st.expander("📄 View full semantic contract"):
+    with open("semantic_contract.md") as f:
+        st.markdown(f.read())
+
 with st.expander("📄 View full semantic contract"):
     with open("semantic_contract.md") as f:
         st.markdown(f.read())
